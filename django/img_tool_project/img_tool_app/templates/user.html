@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block "body" %}
+    <div class="container">
+        <div class="jumbotron">
+            <h4><b>All Users</b></h4><br/>
+            <table>
+                <tr>
+                    <th width="130">
+                        Username
+                    </th>
+                    <th>
+                        Groups of User
+                    </th>
+                </tr>
+                {% for user in allUsers %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.username|getGroupsOfUser }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+    </div>
+    {% if  session.currentUser == 'admin' %}
+        <div class="container">
+            <div class="jumbotron">
+                <div class="row">
+                    <div class="col-xs-6">
+                        <h3><b>Add User</b></h3>
+                        <form method="POST">
+                            {{ form.as_p }}
+                            {% csrf_token %}
+                            <input type="submit" name="addUser" value="Add User">
+                        </form>
+                    </div>
+                    <div class="col-xs-6">
+                        <h3><b>Del User</b></h3>
+                        <form method="POST">
+                            {{ formDel.as_p }}
+                            {% csrf_token %}
+                            <input type="submit" name="delUser" value="Delete User">
+                        </form>
+                        <br/><br/>
+                        <b>Change Password</b><br/>
+                        <form method="POST">
+                            {% for field in formUpdatePass %}
+                                <div class="form-group">
+                                    {% if field.name == 'newPassword' %}
+                                        <label>
+                                            <input type="password" name="newPassword" class="form-control">
+                                        </label>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                            {% csrf_token %}
+                            <input type="submit" name="updatePass" value="Update">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <div class="container">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="submit" name="goBack" value="go back">
+        </form>
+    </div>
+
+
+
+{% endblock %}

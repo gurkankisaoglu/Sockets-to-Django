@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block "body" %}
+    <div class="container">
+        <div class="jumbotron">
+            <div class="row">
+                <div class="col-xs-6">
+                    <h4><b>All Images</b></h4><br/>
+                    <table>
+                        <tr>
+                            <th width="130">
+                                Imagename
+                            </th>
+                            <th>
+                                Owner
+                            </th>
+                        </tr>
+                        {% for image in allImages %}
+                            <tr>
+                                <td>{{ image.owner }}</td>
+                                <td>{{ image.name }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                    <br><br>
+                    <h4><b>Load Image From Computer</b></h4>
+                    <form enctype="multipart/form-data" method="POST">
+                        {{ form.as_p }}
+                        {% csrf_token %}
+                        <input type="submit" name="load" value="load">
+                    </form>
+                    <br><br>
+                    <h4><b>Save Image To Database</b></h4>
+                    <form method="POST">
+                        {{ formSave.as_p }}
+                        {% csrf_token %}
+                        <input type="submit" name="save" value="save">
+                    </form>
+                    <br><br>
+                    <h4><b>Load Image From Database</b></h4>
+                    <form method="POST">
+                        {{ formLoadFromDB.as_p }}
+                        {% csrf_token %}
+                        <input type="submit" name="loadDB" value="load">
+                    </form>
+                </div>
+                <div class="col-xs-6">
+                    {% if 'name' in session %}
+                        <h3><b>Current Image: </b>
+                            {{ session.name }}
+                        </h3>
+                    {% endif %}
+                    {% if 'name' not in session %}
+                        <h3><b>There is no image loaded</b></h3>
+                    {% endif %}
+                    {% if 'name' in session %}
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="submit" name="showImage" value="show image">
+                        </form>
+                        <br>
+                        <br>
+                        {% if session.owner == session.currentUser %}
+                            <form method="POST">
+                                {{ formSetDefault.as_p }}
+                                {% csrf_token %}
+                                <input type="submit" name="setDefault" value="set default">
+                            </form>
+                            <br>
+                            <br>
+                            <form method="POST">
+                                {{ formAddRule.as_p }}
+                                {% csrf_token %}
+                                <input type="submit" name="addRule" value="add rule">
+                            </form>
+                            <br>
+                            <br>
+                            <form method="POST">
+                                {{ formDelRule.as_p }}
+                                {% csrf_token %}
+                                <input type="submit" name="delRule" value="delete rule">
+                            </form>
+
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="submit" name="goBack" value="go back">
+        </form>
+    </div>
+
+
+
+{% endblock %}

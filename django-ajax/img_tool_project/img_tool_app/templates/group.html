@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block "body" %}
+
+    <div class="container">
+        <div class="jumbotron">
+            <h4><b>All Groups</b></h4><br/>
+            <table id="groupTable">
+                <tr>
+                    <th width="130">
+                        Groupname
+                    </th>
+                    <th>
+                        Users of Groups
+                    </th>
+                </tr>
+                {% for group in allGroups %}
+                    <tr>
+                        <td>{{ group.groupname }}</td>
+                        <td>{{ group.groupname|getUsersOfGroup }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+        </div>
+
+    </div>
+    {% if  session.currentUser == 'admin' %}
+        <div class="container">
+            <div class="jumbotron">
+                <div class="row">
+                    <div class="col-xs-6">
+                        <h3><b>Add Group</b></h3>
+                        <form id="add_group_form" method="POST">
+                            {{ form.as_p }}
+                            {% csrf_token %}
+                            {% block addGroup %}
+                                <script type="text/javascript">
+                                    $("#add_group_form").on("submit", function (event) {
+                                        event.preventDefault();
+                                        $.ajax({
+                                            type: "POST",
+                                            url: '/group/',
+                                            data:
+                                                {
+                                                    'action': "addGroup",
+                                                    'groupname': $('#id_groupname').val(),
+                                                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                                }
+                                            ,
+                                            success: function (data) {
+                                                if (data) {
+                                                    alert(JSON.stringify(data.isSuccessful));
+                                                    var table = document.getElementById("groupTable");
+                                                    var elem_count = table.rows.length;
+                                                    var row = table.insertRow(elem_count);
+                                                    // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+                                                    var cell1 = row.insertCell(0);
+                                                    var cell2 = row.insertCell(1);
+
+                                                    // Add some text to the new cells:
+                                                    cell1.innerHTML = $('#id_groupname').val();
+                                                    cell2.innerHTML = '[]';
+                                                    document.getElementById("add_group_form").reset();
+
+                                                }
+                                            }
+                                        });
+                                    });
+                                </script>
+                            {% endblock %}
+                            <input type="hidden" name="_method" value="add">
+                            <input type="submit" name="addGroup" value="Add Group">
+                        </form>
+                    </div>
+                    <div class="col-xs-6">
+                        <h3><b>Del Group</b></h3>
+                        <form id="del_group_form" method="POST">
+                            {{ formDel.as_p }}
+                            {% csrf_token %}
+                            {% block delGroup %}
+                                <script type="text/javascript">
+                                    $("#del_group_form").on("submit", function (event) {
+                                        event.preventDefault();
+                                        $.ajax({
+                                            type: "POST",
+                                            url: '/group/',
+                                            data:
+                                                {
+                                                    'action': "delGroup",
+                                                    'name': $('#id_name').val(),
+                                                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                                }
+                                            ,
+                                            success: function (data) {
+                                                var table = document.getElementById("groupTable");
+                                                var elem_count = table.rows.length;
+                                                for (var i = 0; i < elem_count; i++) {
+                                                    if (table.rows[i].cells[0].innerText === $('#id_name').val()) {
+                                                        table.deleteRow(i);
+                                                        document.getElementById("del_group_form").reset();
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    });
+                                </script>
+                            {% endblock %}
+                            <input type="hidden" name="_method" value="delete">
+                            <input type="submit" name="delGroup" value="Delete Group">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <div class="container">
+        <form id="go_back_form" method="POST">
+            {% csrf_token %}
+            {% block goBack %}
+                <script type="text/javascript">
+                    $("#go_back_form").on("submit", function (event) {
+                        event.preventDefault();
+                        $.ajax({
+                            type: "POST",
+                            url: '/group/',
+                            data:
+                                {
+                                    'action': "goBack",
+                                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                }
+                            ,
+                            success: function (data) {
+                                if (data) {
+                                    window.location.replace('/index/')
+                                }
+                            }
+                        });
+                    });
+                </script>
+            {% endblock %}
+            <input type="submit" name="goBack" value="go back">
+        </form>
+    </div>
+
+
+{% endblock %}

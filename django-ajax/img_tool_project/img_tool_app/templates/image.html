@@ -1,0 +1,664 @@
+{% extends "base.html" %}
+
+
+{% block "body" %}
+    <div class="container">
+        <div class="jumbotron">
+            <div class="row">
+                <div class="col-xs-6">
+                    <h4><b>All Images</b></h4><br/>
+                    <table id="imageTable">
+                        <tr>
+                            <th width="130">
+                                Imagename
+                            </th>
+                            <th>
+                                Owner
+                            </th>
+                        </tr>
+                        {% for image in allImages %}
+                            <tr>
+                                <td>{{ image.name }}</td>
+                                <td>{{ image.owner }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                    <br><br>
+                    <h4><b>Load Image From Computer</b></h4>
+                    <form id="loadFromComp" enctype="multipart/form-data" method="POST">
+                        {{ form.as_p }}
+                        {% csrf_token %}
+                        {% block loadFromComp %}
+                            <script type="text/javascript">
+                                $("#loadFromComp").on("submit", function (event) {
+                                    event.preventDefault();
+                                    img = $('#id_img').val();
+                                    while (img.includes('/') || img.includes('\\')) {
+                                        img = img.substr(1);
+                                    }
+                                    $.ajax({
+                                        type: "POST",
+                                        url: '/image/',
+                                        data:
+                                            {
+                                                'action': "loadFromComp",
+                                                'img': img,
+                                                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                            }
+                                        ,
+                                        success: function (data) {
+                                            if (data) {
+                                                alert("image loaded")
+                                                document.getElementById("loadFromComp").reset();
+
+                                            }
+                                        }
+                                    });
+                                });
+                            </script>
+                        {% endblock %}
+                        <input type="submit" name="load" value="load">
+                    </form>
+                    <br><br>
+                    <h4><b>Save Image To Database</b></h4>
+                    <form id="save_form" method="POST">
+                        {{ formSave.as_p }}
+                        {% csrf_token %}
+                        {% block save %}
+                            <script type="text/javascript">
+                                $("#save_form").on("submit", function (event) {
+                                    event.preventDefault();
+                                    $.ajax({
+                                        type: "POST",
+                                        url: '/image/',
+                                        data:
+                                            {
+                                                'action': "save",
+                                                'imageName': $('#id_imageName').val(),
+                                                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                            }
+                                        ,
+                                        success: function (data) {
+                                            if (data) {
+                                                var user = JSON.stringify(data.isSuccessful)
+                                                var table = document.getElementById("imageTable");
+                                                var elem_count = table.rows.length;
+                                                var row = table.insertRow(elem_count);
+                                                // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+                                                var cell1 = row.insertCell(0);
+                                                var cell2 = row.insertCell(1);
+
+                                                // Add some text to the new cells:
+                                                cell1.innerText = $('#id_imageName').val();
+                                                cell2.innerText = user;
+                                                document.getElementById("save_form").reset();
+
+                                            }
+                                        }
+                                    });
+                                });
+                            </script>
+                        {% endblock %}
+                        <input type="submit" name="save" value="save">
+                    </form>
+                    <br><br>
+                    <h4><b>Load Image From Database</b></h4>
+                    <form id="load_DB_form" method="POST">
+                        {{ formLoadFromDB.as_p }}
+                        {% csrf_token %}
+                        {% block loadDB %}
+                            <script type="text/javascript">
+                                $("#load_DB_form").on("submit", function (event) {
+                                    event.preventDefault();
+                                    $.ajax({
+                                        type: "POST",
+                                        url: '/image/',
+                                        data:
+                                            {
+                                                'action': "loadDB",
+                                                'imageName': $('#id_loadImgName').val(),
+                                                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                            }
+                                        ,
+                                        success: function (data) {
+                                            if (data) {
+                                                window.location.replace('/image/')
+                                            }
+                                        }
+                                    });
+                                });
+                            </script>
+                        {% endblock %}
+                        <input type="submit" name="loadDB" value="load">
+                    </form>
+                </div>
+                <div class="col-xs-6">
+                    {% if 'name' in session %}
+                        <h3><b>Current Image: </b>
+                            {{ session.name }}
+                        </h3>
+                    {% endif %}
+                    {% if 'name' in session %}
+                        <div id="div_img">
+
+                        </div>
+                        <canvas id="imageToShow" width="400" height="400">
+
+                        </canvas>
+                    {% endif %}
+
+                    {% if 'name' not in session %}
+                        <h3><b>There is no image loaded</b></h3>
+                    {% endif %}
+                    {% if 'name' in session %}
+                        <form id="showImageForm" method="POST">
+                            {% csrf_token %}
+                            {% block showImage %}
+                                <script type="text/javascript">
+                                    function fun(event) {
+                                        var canvas = document.getElementById("imageToShow");
+                                        var coords = canvas.getBoundingClientRect();
+                                        if (which_rule === "RECTANGLE") {
+                                            //ctx.clearRect(0,0,$(this).width(),$(this).height());
+                                            var initialX = parseInt(event.clientX - this.getBoundingClientRect().left);
+                                            var initialY = parseInt(event.clientY - this.getBoundingClientRect().top);
+                                            console.log(initialX);
+                                            console.log(initialY);
+
+                                            $(this).mouseup(function (evt) {
+                                                var finalX = initialX + evt.clientX - event.clientX;
+                                                var finalY = initialY + evt.clientY - event.clientY;
+                                                ctx.strokeRect(initialX, initialY, finalX, finalY);
+                                                //console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                //console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                var inner = initialX + " ";
+                                                inner += initialY + " ";
+                                                inner += finalX + " ";
+                                                inner += finalY;
+                                                console.log(inner);
+                                                $('#id_coordinates').val(inner);
+                                            });
+                                        }
+                                        if (which_rule === "CIRCLE") {
+                                            var initialX = event.clientX - this.getBoundingClientRect().left;
+                                            var initialY = event.clientY - this.getBoundingClientRect().top;
+                                            $(this).mouseup(function (evt) {
+                                                x = (initialX + evt.clientX - this.getBoundingClientRect().left) / 2;
+                                                y = (initialY + evt.clientY - this.getBoundingClientRect().top) / 2;
+                                                r = Math.sqrt(Math.pow(initialX - x, 2) + Math.pow(initialY - y, 2));
+                                                console.log(x);
+                                                console.log(r);
+                                                console.log(y);
+                                                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                                                ctx.strokeStyle = "#000000"; // <-- set fill color
+                                                ctx.stroke();
+                                                console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                console.log(evt.clientY - this.getBoundingClientRect().top);
+                                            });
+                                        }
+
+                                        drag = true;
+
+                                    }
+
+                                    $(document).ready(function () {
+                                        which_rule = null;
+                                        wholeGroups = document.getElementById("id_shape");
+                                        console.log(wholeGroups)
+
+                                        elem_count = wholeGroups.getElementsByTagName('li').length;
+                                        console.log(elem_count)
+                                        wholeGroups.getElementsByTagName('li')[0].getElementsByTagName('label')[0].getElementsByTagName('input')[0].addEventListener(
+                                            "click", function (event) {
+                                                which_rule = wholeGroups.getElementsByTagName('li')[0].getElementsByTagName('label')[0].getElementsByTagName('input')[0].value;
+                                            });
+
+                                        wholeGroups.getElementsByTagName('li')[1].getElementsByTagName('label')[0].getElementsByTagName('input')[0].addEventListener(
+                                            "click", function (event) {
+                                                which_rule = wholeGroups.getElementsByTagName('li')[1].getElementsByTagName('label')[0].getElementsByTagName('input')[0].value;
+                                            });
+                                        wholeGroups.getElementsByTagName('li')[2].getElementsByTagName('label')[0].getElementsByTagName('input')[0].addEventListener(
+                                            "click", function (event) {
+                                                which_rule = wholeGroups.getElementsByTagName('li')[2].getElementsByTagName('label')[0].getElementsByTagName('input')[0].value;
+                                            });
+
+                                    });
+
+                                    $("#showImageForm").on("submit", function (event) {
+                                        event.preventDefault();
+                                        $.ajax({
+                                            type: "POST",
+                                            url: '/image/',
+                                            data:
+                                                {
+                                                    'action': "showImage",
+                                                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                                }
+                                            ,
+                                            success: function (data, status, xhr) {
+                                                if (data) {
+
+
+                                                    var media_url = "/media/trial_image.jpeg";
+                                                    var canvas = document.getElementById("imageToShow");
+                                                    var ctx = canvas.getContext('2d');
+                                                    var canvasWidth = 400;
+                                                    var canvasHeight = 300;
+
+                                                    // resize the canvas
+                                                    canvas.width = 400;
+                                                    canvas.height = 300;
+
+                                                    var img = new Image();
+                                                    img.src = media_url;
+
+                                                    img.onload = function () {
+
+                                                        img_width = img.width;
+                                                        img_height = img.height;
+                                                        ctx.canvas.width = img_width;
+                                                        ctx.canvas.height = img_height;
+                                                        ctx.drawImage(img, 0, 0, img_width, img_height);
+                                                        var canvas = document.getElementById("imageToShow");
+                                                        var context = canvas.getContext('2d');
+
+
+                                                        var drag = false;
+                                                        var dragStart;
+                                                        var dragEnd;
+                                                        canvas.addEventListener('mousedown', fun(event));
+
+                                                        /*canvas.addEventListener('mousemove', function (event) {
+                                                            if (drag) {
+                                                                dragEnd = {
+                                                                    x: event.pageX - canvas.offsetLeft,
+                                                                    y: event.pageY - canvas.offsetTop
+                                                                };
+                                                                context.translate(dragEnd.x - dragStart.x, dragEnd.y - dragStart.y);
+                                                                dragStart = dragEnd;
+                                                                clear();
+                                                                draw();
+                                                            }
+
+                                                        })*/
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    });
+                                </script>
+                            {% endblock %}
+                            <input type="submit" name="showImage" value="show image">
+                        </form>
+                        <br>
+                        <br>
+                        {% if session.owner == session.currentUser %}
+                            <form id="setDefaultForm" method="POST">
+                                {{ formSetDefault.as_p }}
+                                {% csrf_token %}
+                                {% block setDefault %}
+                                    <script type="text/javascript">
+                                        function fun(event) {
+
+                                            var coords = canvas.getBoundingClientRect();
+                                            if (which_rule === "RECTANGLE") {
+                                                //ctx.clearRect(0,0,$(this).width(),$(this).height());
+                                                var initialX = parseInt(event.clientX - this.getBoundingClientRect().left);
+                                                var initialY = parseInt(event.clientY - this.getBoundingClientRect().top);
+                                                console.log(initialX);
+                                                console.log(initialY);
+
+                                                $(this).mouseup(function (evt) {
+                                                    var finalX = initialX + evt.clientX - event.clientX;
+                                                    var finalY = initialY + evt.clientY - event.clientY;
+                                                    ctx.strokeRect(initialX, initialY, finalX, finalY);
+                                                    //console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                    //console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                    var inner = initialX + " ";
+                                                    inner += initialY + " ";
+                                                    inner += finalX + " ";
+                                                    inner += finalY;
+                                                    console.log(inner);
+                                                    $('#id_coordinates').val(inner);
+                                                });
+                                            }
+                                            if (which_rule === "CIRCLE") {
+                                                var initialX = event.clientX - this.getBoundingClientRect().left;
+                                                var initialY = event.clientY - this.getBoundingClientRect().top;
+                                                $(this).mouseup(function (evt) {
+                                                    x = (initialX + evt.clientX - this.getBoundingClientRect().left) / 2;
+                                                    y = (initialY + evt.clientY - this.getBoundingClientRect().top) / 2;
+                                                    r = Math.sqrt(Math.pow(initialX - x, 2) + Math.pow(initialY - y, 2));
+                                                    console.log(x);
+                                                    console.log(r);
+                                                    console.log(y);
+                                                    ctx.arc(x, y, r, 0, 2 * Math.PI);
+                                                    ctx.strokeStyle = "#000000"; // <-- set fill color
+                                                    ctx.stroke();
+                                                    console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                    console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                });
+                                            }
+
+                                            drag = true;
+
+                                        }
+
+                                        $("#setDefaultForm").on("submit", function (event) {
+                                            event.preventDefault();
+                                            var canvas = document.getElementById("imageToShow");
+                                            var ctx = canvas.getContext('2d');
+                                            ctx.drawImage(new Image(), 0 ,0 ,0 ,0);
+                                            var wholeGroups = document.getElementById("id_defaultAction");
+                                            var elem_count = wholeGroups.getElementsByTagName('li').length;
+                                            for (var i = 0; i < elem_count; i++) {
+                                                if (wholeGroups.getElementsByTagName('li')[i].getElementsByTagName('label')[0].getElementsByTagName('input')[0].checked === true) {
+                                                    action = wholeGroups.getElementsByTagName('li')[i].getElementsByTagName('label')[0].getElementsByTagName('input')[0].value;
+                                                }
+                                            }
+                                            $.ajax({
+                                                type: "POST",
+                                                url: '/image/',
+                                                data:
+                                                    {
+                                                        'action': "set default",
+                                                        'defaultAction': action,
+                                                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                                    }
+                                                ,
+                                                success: function (data) {
+                                                    if (data) {
+                                                        alert("default action setted")
+
+                                                        setTimeout(function () {
+                                                            alert("Refreshing...", 4000)
+
+                                                            var media_url = "/media/trial_image.jpeg";
+                                                            alert("dsfkafsa");
+                                                            var canvas = document.getElementById("imageToShow");
+                                                            var ctx = canvas.getContext('2d');
+                                                            var canvasWidth = 400;
+                                                            var canvasHeight = 300;
+                                                            canvas.width = canvasWidth;
+                                                            canvas.height = canvasHeight;
+                                                            var img = new Image();
+                                                            img.src = media_url;
+                                                            img.onload = function () {
+                                                                var canvas = document.getElementById("imageToShow");
+                                                                img_width = img.width;
+                                                                img_height = img.height;
+                                                                ctx.canvas.width = img_width;
+                                                                ctx.canvas.height = img_height;
+                                                                ctx.drawImage(img, 0, 0, img_width, img_height);
+                                                                canvas.addEventListener('mousedown', function (event) {
+
+                                                                    var coords = canvas.getBoundingClientRect();
+                                                                    if (which_rule === "RECTANGLE") {
+                                                                        //ctx.clearRect(0,0,$(this).width(),$(this).height());
+                                                                        var initialX = parseInt(event.clientX - this.getBoundingClientRect().left);
+                                                                        var initialY = parseInt(event.clientY - this.getBoundingClientRect().top);
+                                                                        console.log(initialX);
+                                                                        console.log(initialY);
+
+                                                                        $(this).mouseup(function (evt) {
+                                                                            var finalX = initialX + evt.clientX - event.clientX;
+                                                                            var finalY = initialY + evt.clientY - event.clientY;
+                                                                            ctx.strokeRect(initialX, initialY, finalX, finalY);
+                                                                            //console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                                            //console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                                            var inner = initialX + " ";
+                                                                            inner += initialY + " ";
+                                                                            inner += finalX + " ";
+                                                                            inner += finalY;
+                                                                            console.log(inner);
+                                                                            $('#id_coordinates').val(inner);
+                                                                        });
+                                                                    }
+                                                                    if (which_rule === "CIRCLE") {
+                                                                        var initialX = event.clientX - this.getBoundingClientRect().left;
+                                                                        var initialY = event.clientY - this.getBoundingClientRect().top;
+                                                                        $(this).mouseup(function (evt) {
+                                                                            x = (initialX + evt.clientX - this.getBoundingClientRect().left) / 2;
+                                                                            y = (initialY + evt.clientY - this.getBoundingClientRect().top) / 2;
+                                                                            r = Math.sqrt(Math.pow(initialX - x, 2) + Math.pow(initialY - y, 2));
+                                                                            console.log(x);
+                                                                            console.log(r);
+                                                                            console.log(y);
+                                                                            ctx.arc(x, y, r, 0, 2 * Math.PI);
+                                                                            ctx.strokeStyle = "#000000"; // <-- set fill color
+                                                                            ctx.stroke();
+                                                                            console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                                            console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                                        });
+                                                                    }
+
+                                                                    drag = true;
+
+                                                                });
+                                                                document.getElementById("setDefaultForm").reset();
+
+
+                                                            }
+                                                        }, 3000);
+                                                        // resize the canvas
+
+
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    </script>
+                                {% endblock %}
+                                <input type="submit" name="setDefault" value="set default">
+                            </form>
+                            <br>
+                            <br>
+                            <form id="addRuleForm" method="POST">
+                                {{ formAddRule.as_p }}
+                                {% csrf_token %}
+                                {% block addRule %}
+                                    <script type="text/javascript">
+                                        function fun(event) {
+                                            var canvas = document.getElementById("imageToShow");
+                                            var coords = canvas.getBoundingClientRect();
+                                            if (which_rule === "RECTANGLE") {
+                                                //ctx.clearRect(0,0,$(this).width(),$(this).height());
+                                                var initialX = parseInt(event.clientX - this.getBoundingClientRect().left);
+                                                var initialY = parseInt(event.clientY - this.getBoundingClientRect().top);
+                                                console.log(initialX);
+                                                console.log(initialY);
+
+                                                $(this).mouseup(function (evt) {
+                                                    var finalX = initialX + evt.clientX - event.clientX;
+                                                    var finalY = initialY + evt.clientY - event.clientY;
+                                                    ctx.strokeRect(initialX, initialY, finalX, finalY);
+                                                    //console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                    //console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                    var inner = initialX + " ";
+                                                    inner += initialY + " ";
+                                                    inner += finalX + " ";
+                                                    inner += finalY;
+                                                    console.log(inner);
+                                                    $('#id_coordinates').val(inner);
+                                                });
+                                            }
+                                            if (which_rule === "CIRCLE") {
+                                                var initialX = event.clientX - this.getBoundingClientRect().left;
+                                                var initialY = event.clientY - this.getBoundingClientRect().top;
+                                                $(this).mouseup(function (evt) {
+                                                    x = (initialX + evt.clientX - this.getBoundingClientRect().left) / 2;
+                                                    y = (initialY + evt.clientY - this.getBoundingClientRect().top) / 2;
+                                                    r = Math.sqrt(Math.pow(initialX - x, 2) + Math.pow(initialY - y, 2));
+                                                    console.log(x);
+                                                    console.log(r);
+                                                    console.log(y);
+                                                    ctx.arc(x, y, r, 0, 2 * Math.PI);
+                                                    ctx.strokeStyle = "#000000"; // <-- set fill color
+                                                    ctx.stroke();
+                                                    console.log(evt.clientX - this.getBoundingClientRect().left);
+                                                    console.log(evt.clientY - this.getBoundingClientRect().top);
+                                                });
+                                            }
+
+                                            drag = true;
+
+                                        }
+
+                                        $("#addRuleForm").on("submit", function (event) {
+                                            event.preventDefault();
+                                            var wholeGroups = document.getElementById("id_action");
+                                            var elem_count = wholeGroups.getElementsByTagName('li').length;
+                                            console.log(wholeGroups)
+                                            var action, shape;
+                                            for (var i = 0; i < elem_count; i++) {
+                                                if (wholeGroups.getElementsByTagName('li')[i].getElementsByTagName('label')[0].getElementsByTagName('input')[0].checked === true) {
+                                                    action = wholeGroups.getElementsByTagName('li')[i].getElementsByTagName('label')[0].getElementsByTagName('input')[0].value;
+                                                }
+                                            }
+                                            wholeGroups = document.getElementById("id_shape");
+                                            elem_count = wholeGroups.getElementsByTagName('li').length;
+                                            console.log(wholeGroups)
+                                            for (var i = 0; i < elem_count; i++) {
+                                                if (wholeGroups.getElementsByTagName('li')[i].getElementsByTagName('label')[0].getElementsByTagName('input')[0].checked === true) {
+                                                    shape = wholeGroups.getElementsByTagName('li')[i].getElementsByTagName('label')[0].getElementsByTagName('input')[0].value;
+                                                }
+                                            }
+                                            $.ajax({
+                                                type: "POST",
+                                                url: '/image/',
+                                                data:
+                                                    {
+                                                        'action': "add rule",
+                                                        'defaultAction': action,
+                                                        'shape': shape,
+                                                        'effects': $('#id_effects').val(),
+                                                        'coordinates': $('#id_coordinates').val(),
+                                                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                                    }
+                                                ,
+                                                success: function (data) {
+                                                    if (data) {
+                                                        alert("rule added");
+                                                        console.log(data);
+                                                        setTimeout(function () {
+                                                            var media_url = "/media/trial_image.jpeg";
+                                                            var canvas = document.getElementById("imageToShow");
+                                                            var ctx = canvas.getContext('2d');
+                                                            var canvasWidth = 400;
+                                                            var canvasHeight = 300;
+                                                            canvas.width = canvasWidth;
+                                                            canvas.height = canvasHeight;
+                                                            var img = new Image();
+                                                            img.src = media_url;
+                                                            alert("Refreshing...", 1000)
+                                                            img.onload = function () {
+
+                                                                img_width = img.width;
+                                                                img_height = img.height;
+                                                                ctx.canvas.width = img_width;
+                                                                ctx.canvas.height = img_height;
+
+                                                                ctx.drawImage(img, 0, 0, img_width, img_height);
+                                                                document.getElementById("addRuleForm").reset();
+                                                            }
+                                                        }, 6000);
+
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    </script>
+                                {% endblock %}
+                                <input type="submit" name="addRule" value="add rule">
+                            </form>
+                            <br>
+                            <br>
+                            <form id="delRuleForm" method="POST">
+                                {{ formDelRule.as_p }}
+                                {% csrf_token %}
+                                {% block delRule %}
+                                    <script type="text/javascript">
+                                        $("#delRuleForm").on("submit", function (event) {
+                                            event.preventDefault();
+                                            $.ajax({
+                                                type: "POST",
+                                                url: '/image/',
+                                                data:
+                                                    {
+                                                        'action': "delete rule",
+                                                        'position': $('#id_name').val(),
+                                                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                                    }
+                                                ,
+                                                success: function (data) {
+                                                    if (data) {
+                                                        alert("rule deleted");
+                                                        setTimeout(function () {
+                                                            var media_url = "/media/trial_image.jpeg";
+                                                            var canvas = document.getElementById("imageToShow");
+                                                            var ctx = canvas.getContext('2d');
+                                                            var canvasWidth = 400;
+                                                            var canvasHeight = 300;
+                                                            canvas.width = canvasWidth;
+                                                            canvas.height = canvasHeight;
+                                                            var img = new Image();
+                                                            img.src = media_url;
+                                                            alert("Refreshing...", 1000)
+                                                            img.onload = function () {
+                                                                img_width = img.width;
+                                                                img_height = img.height;
+                                                                ctx.canvas.width = img_width;
+                                                                ctx.canvas.height = img_height;
+
+                                                                ctx.drawImage(img, 0, 0, img_width, img_height);
+                                                                document.getElementById("delRuleForm").reset();
+                                                            }
+
+                                                        }, 6000);
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    </script>
+                                {% endblock %}
+                                <input type="submit" name="delRule" value="delete rule">
+                            </form>
+
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <form id="go_back_form" method="POST">
+            {% csrf_token %}
+            {% block goBack %}
+                <script type="text/javascript">
+                    $("#go_back_form").on("submit", function (event) {
+                        event.preventDefault();
+                        $.ajax({
+                            type: "POST",
+                            url: '/image/',
+                            data:
+                                {
+                                    'action': "goBack",
+                                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                                }
+                            ,
+                            success: function (data) {
+                                if (data) {
+                                    window.location.replace('/index/')
+                                }
+                            }
+                        });
+                    });
+                </script>
+            {% endblock %}
+            <input type="submit" name="goBack" value="go back">
+        </form>
+    </div>
+
+
+
+{% endblock %}

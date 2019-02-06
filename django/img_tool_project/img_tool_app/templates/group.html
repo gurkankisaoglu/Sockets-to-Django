@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block "body" %}
+
+    <div class="container">
+        <div class="jumbotron">
+            <h4><b>All Groups</b></h4><br/>
+            <table>
+                <tr>
+                    <th width="130">
+                        Groupname
+                    </th>
+                    <th>
+                        Users of Groups
+                    </th>
+                </tr>
+                {% for group in allGroups %}
+                    <tr>
+                        <td>{{ group.groupname }}</td>
+                        <td>{{ group.groupname|getUsersOfGroup }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+        </div>
+
+    </div>
+    {% if  session.currentUser == 'admin' %}
+        <div class="container">
+            <div class="jumbotron">
+                <div class="row">
+                    <div class="col-xs-6">
+                        <h3><b>Add Group</b></h3>
+                        <form method="POST">
+                            {{ form.as_p }}
+                            {% csrf_token %}
+                            <input type="hidden" name="_method" value="add">
+                            <input type="submit" name="addGroup" value="Add Group">
+                        </form>
+                    </div>
+                    <div class="col-xs-6">
+                        <h3><b>Del Group</b></h3>
+                        <form method="POST">
+                            {{ formDel.as_p }}
+                            {% csrf_token %}
+                            <input type="hidden" name="_method" value="delete">
+                            <input type="submit" name="delGroup" value="Delete Group">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <div class="container">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="submit" name="goBack" value="go back">
+        </form>
+    </div>
+
+
+{% endblock %}
